@@ -14,4 +14,6 @@ start() ->
             io:format("Client: no data received.~n"),
             {}
         end,
+    io:format("Client: closing connection.~n"),
+    gen_tcp:close(Socket),
     ReplyFromServer.

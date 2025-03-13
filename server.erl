@@ -20,7 +20,7 @@ loop(Socket) ->
             Reply = "Echo " ++ StringMsg,
             io:format("Server: replying: ~p~n", [Reply]),
             gen_tcp:send(Socket, Reply),
-            loop(Socket);
+            gen_tcp:close(Socket);
         {tcp_closed, Socket} ->
             io:format("Server: socket closed - shutting down...~n")
     end.
