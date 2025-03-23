@@ -1,26 +1,26 @@
 -module(server).
--compile(export_all).
+-compile([export_all, nowarn_export_all]).
 
 start(Port) ->
     {ok, ListenSocket} =
         gen_tcp:listen(Port, [list, {packet, 0},
-                                    {reuseaddr, true},
-                                    {active, true}]),
-    io:format("Server: 1~n"),
+                                    {active, true},
+                                    {reuseaddr, true}]),
+    ok = io:format("Server: Opened listening socket: ~p~n", [ListenSocket]),
     {ok, Socket} = gen_tcp:accept(ListenSocket),
-    io:format("Server: 2~n"),
+    ok = io:format("Server: Accepted connection on socket: ~p~n", [Socket]),
     ok = gen_tcp:close(ListenSocket),
-    io:format("Server: listening on port ~p~n", [Port]),
+    io:format("Server: Listening on port ~p~n", [Port]),
     loop(Socket).
 
 loop(Socket) ->
     receive
         {tcp, Socket, StringMsg} ->
-            io:format("Server: received message: ~p~n", [StringMsg]),
+            io:format("Server: Received message: ~p~n", [StringMsg]),
             Reply = "Echo " ++ StringMsg,
-            io:format("Server: replying: ~p~n", [Reply]),
-            gen_tcp:send(Socket, Reply),
-            gen_tcp:close(Socket);
+            io:format("Server: Replying: ~p~n", [Reply]),
+            ok = gen_tcp:send(Socket, Reply),
+            ok = gen_tcp:close(Socket);
         {tcp_closed, Socket} ->
-            io:format("Server: socket closed - shutting down...~n")
+            io:format("Server: Socket closed - shutting down...~n")
     end.

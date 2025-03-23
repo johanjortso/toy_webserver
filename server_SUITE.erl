@@ -11,12 +11,14 @@ groups() ->
     [{grp1, [], Grp1}].
 
 tc_server_onetime_request(_Config) ->
-    spawn_link(server, start, [7777]),
-    {tcp, _Socket, "Echo hello"} = client:start(),
+    Port = 7777,
+    spawn_link(server, start, [Port]),
+    {tcp, _Socket, "Echo Hello"} = client:start(Port),
     ok.
 
 tc_server_multiple_client_requests(_Config) ->
-    spawn_link(server, start, [7777]),
-    {tcp, Socket, "Echo hello"} = client:start(),
-    {tcp, Socket, "Echo hello"} = client:start(),
+    Port = 7777,
+    spawn_link(server, start, [Port]),
+    {tcp, Socket, "Echo Hello"} = client:start(Port),
+    {tcp, Socket, "Echo Hello"} = client:start(Port),
     ok.

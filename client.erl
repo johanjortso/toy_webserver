@@ -1,19 +1,19 @@
 -module(client).
--compile(export_all).
+-compile([export_all, nowarn_export_all]).
 
-start() ->
-    {ok, Socket} = gen_tcp:connect("localhost", 7777, [list, {packet, 0}]),
-    io:format("Client: connected to: ~p~n", [Socket]),
-    gen_tcp:send(Socket, "hello"),
+start(Port) ->
+    {ok, Socket} = gen_tcp:connect("localhost", Port, [list, {packet, 0}]),
+    ok = io:format("Client: Connected to: ~p~n", [Socket]),
+    ok = gen_tcp:send(Socket, "Hello"),
     ReplyFromServer =
         receive
             Reply ->
-                io:format("Client: reply: ~p~n", [Reply]),
+                ok = io:format("Client: Reply: ~p~n", [Reply]),
                 Reply
         after timer:seconds(30) ->
-            io:format("Client: no data received.~n"),
+            ok = io:format("Client: No data received.~n"),
             {}
         end,
-    io:format("Client: closing connection.~n"),
-    gen_tcp:close(Socket),
+    ok = io:format("Client: Closing connection.~n"),
+    ok = gen_tcp:close(Socket),
     ReplyFromServer.
