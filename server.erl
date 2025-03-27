@@ -6,11 +6,14 @@ start(Port) ->
         gen_tcp:listen(Port, [list, {packet, 0},
                                     {active, true},
                                     {reuseaddr, true}]),
-    ok = io:format("Server: Opened listening socket: ~p~n", [ListenSocket]),
+    {ok, {ListenIp, ListenPort}} = inet:sockname(ListenSocket),
+    ok = io:format("Server: Listening on IP ~p port ~p~n", [ListenIp, ListenPort]),
     {ok, Socket} = gen_tcp:accept(ListenSocket),
-    ok = io:format("Server: Accepted connection on socket: ~p~n", [Socket]),
+    {ok, {LocalIp, LocalPort}} = inet:sockname(Socket),
+    {ok, {PeerIp, PeerPort}} = inet:peername(Socket),
+    ok = io:format("Server: Accepted connection from IP ~p port ~p on IP ~p port ~p~n",
+                   [PeerIp, PeerPort, LocalIp, LocalPort]),
     ok = gen_tcp:close(ListenSocket),
-    io:format("Server: Listening on port ~p~n", [Port]),
     loop(Socket).
 
 loop(Socket) ->

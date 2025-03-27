@@ -10,16 +10,23 @@ groups() ->
     ],
     [{grp1, [], Grp1}].
 
-tc_server_onetime_request(_Config) ->
-    Host = "localhost",
-    Port = 7777,
+init_per_suite(Config) ->
+    Config ++ [{host, "localhost"},
+               {port, 7777}].
+
+end_per_suite(_Config) ->
+    ok.
+
+tc_server_onetime_request(Config) ->
+    Host = proplists:get_value(host, Config),
+    Port = proplists:get_value(port, Config),
     spawn_link(server, start, [Port]),
     {tcp, _Socket, "Echo Hello"} = client:start(Host, Port),
     ok.
 
-tc_server_multiple_client_requests(_Config) ->
-    Host = "localhost",
-    Port = 7777,
+tc_server_multiple_client_requests(Config) ->
+    Host = proplists:get_value(host, Config),
+    Port = proplists:get_value(port, Config),
     spawn_link(server, start, [Port]),
     {tcp, Socket, "Echo Hello"} = client:start(Host, Port),
     {tcp, Socket, "Echo Hello"} = client:start(Host, Port),

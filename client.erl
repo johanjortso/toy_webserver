@@ -8,7 +8,10 @@ start(Host, Port) ->
     %%                         0..65535, 0..65535, 0..65535, 0..65535}.
     {ok, Ip} = parse_ip(Host),
     {ok, Socket} = gen_tcp:connect(Ip, Port, [list, {packet, 0}]),
-    ok = io:format("Client: Connected to: ~p~n", [Socket]),
+    {ok, {LocalIp, LocalPort}} = inet:sockname(Socket),
+    {ok, {PeerIp, PeerPort}} = inet:peername(Socket),
+    ok = io:format("Client: Connected to IP ~p port ~p from IP ~p port ~p ~n",
+                   [PeerIp, PeerPort, LocalIp, LocalPort]),
     ok = gen_tcp:send(Socket, "Hello"),
     ReplyFromServer =
         receive
