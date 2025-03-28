@@ -1,0 +1,18 @@
+@startuml HTTP Request Sequence
+'title HTTP GET Request
+participant Client
+participant Server
+
+alt GET success
+    Client -> Server : GET /some_file.html HTTP/1.1
+    Client <- Server : Header: 200 OK + Response Body
+else GET failure
+    Client -> Server : GET /nonexisting_file.html HTTP/1.1
+    alt
+        Client <- Server : HTTP/1.1 404 Not Found
+    else
+        Client <- Server : HTTP/1.1 500 Internal Server Error
+    end
+end
+
+@enduml

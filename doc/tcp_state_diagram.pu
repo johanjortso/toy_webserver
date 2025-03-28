@@ -1,0 +1,36 @@
+@startuml
+'title TCP state machine
+'left to right direction'
+
+[*] --> CLOSED
+
+' Server'
+state CLOSED
+CLOSED -left[#blue]-> LISTENING : Listen
+
+LISTENING -left[#blue]-> SYN_RECEIVED : SYN/SYN+ACK
+state ESTABLISHED #lightgreen
+SYN_RECEIVED -[#blue]-> ESTABLISHED : ACK/-
+
+' Client'
+CLOSED -right[#red]-> SYN_SENT : SYN
+SYN_SENT -[#red]-> ESTABLISHED : SYN+ACK/ACK
+
+state "Active Close" as ACTIVE_CLOSE {
+    ESTABLISHED --> FIN_WAIT_1 : CLOSE/FIN
+    FIN_WAIT_1 -[dotted]-> CLOSING : FIN/ACK
+    FIN_WAIT_1 -[dotted]-> TIME_WAIT : FIN+ACK/ACK
+    FIN_WAIT_1 --> FIN_WAIT_2 : ACK/-
+    FIN_WAIT_2 --> TIME_WAIT : FIN/ACK
+    CLOSING -[dotted]-> TIME_WAIT : ACK/-
+    TIME_WAIT -right-> Closed2 : Timeout
+}
+state "Passive Close" as PASSIVE_CLOSE {
+    ESTABLISHED --> CLOSE_WAIT : FIN/ACK
+    CLOSE_WAIT --> LAST_ACK : CLOSE/FIN
+    LAST_ACK --> Closed2 : ACK/-
+}
+
+state "CLOSED" as Closed2
+
+Closed2 --> [*]
