@@ -1,0 +1,18 @@
+@startuml TCP Handshake - Connect
+'title TCP Handshake - Connect
+participant Client
+participant Server
+
+== Connect: 3-way handshake ==
+
+note left of Client: CLOSED
+note right of Server: LISTEN
+Client -> Server : SYN
+note left: SYN_SENT
+note right: SYN_RECEIVED
+Client <- Server : SYN/ACK
+note left: ESTABLISHED
+Client -> Server : ACK
+note RIGHT: ESTABLISHED
+
+@enduml

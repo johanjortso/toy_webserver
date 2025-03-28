@@ -1,0 +1,13 @@
+@startuml TCP Connection established
+'title TCP - Connection established
+participant Client
+participant Server
+
+== ESTABLISHED: Sending and Receiving Data ==
+
+Client -> Server : Client Send / Server Receive
+Client <- Server : Server ACK
+Client <- Server : Server Send / Client Receive
+Client -> Server : Client ACK
+
+@enduml

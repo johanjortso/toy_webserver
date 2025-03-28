@@ -1,0 +1,21 @@
+@startuml TCP Handshake - Close
+'title TCP Handshake - Close
+participant Client
+participant Server
+
+== Close: 4-way handshake ==
+
+Client -> Server : FIN
+note left: FIN_WAIT_1
+Client <- Server : ACK
+note right: CLOSE_WAIT
+note left: FIN_WAIT_2
+Client <- Server : FIN
+note left: TIME_WAIT
+note right: LAST_ACK
+Client -> Server : ACK
+note right: CLOSED
+Client -> Client : Timeout
+note left: CLOSED
+
+@enduml
