@@ -1,4 +1,4 @@
--module(server).
+-module(multi_req_server).
 -compile([export_all, nowarn_export_all]).
 
 start(Port) ->
