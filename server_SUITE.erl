@@ -1,6 +1,8 @@
 -module(server_SUITE).
 -compile([export_all, nowarn_export_all]).
 
+-include_lib("stdlib/include/assert.hrl").
+
 all() -> [{group, GroupName} || {GroupName, _Opt, List} <- groups(), length(List) > 0].
 
 groups() ->
@@ -9,7 +11,11 @@ groups() ->
         tc_server_multiple_client_requests,
         tc_server_parallell_client_requests
     ],
-    [{server_tests, [], ServerTests}].
+    Http = [tc_http_split_headers,
+               tc_http_make_header_text,
+               tc_rfc_2616_date],
+    [{server_tests, [], ServerTests},
+     {http, [parallel], Http}].
 
 init_per_suite(Config) ->
     Config ++ [{host, "localhost"},
@@ -50,6 +56,39 @@ tc_server_parallell_client_requests(Config) ->
     receive_replies(NoOfRequests),
     ct:pal("Got replies from server for all client requests."),
     toy_webserver ! stop,
+    ok.
+
+tc_http_split_headers(_Config) ->
+    Request =
+        "GET /path/to/file.html HTTP/1.1\r\nFrom: someuser@example.com\r\nUse"
+        "r-Agent: Toy Client\r\n\r\n",
+    {Resource, Headers} = http:parse_request(Request),
+    ct:pal("Resource ~p~n", [Resource]),
+    ct:pal("Headers ~p~n", [Headers]),
+    ?assertEqual({"GET", "/path/to/file.html", "HTTP/1.1"}, Resource),
+    ?assertEqual(#{
+                    "From" => "someuser@example.com",
+                    "User-Agent" => "Toy Client"
+                },
+                Headers),
+    ok.
+    
+tc_http_make_header_text(_Config) ->
+    HeaderText =
+        http:make_header_text(200,
+                              #{
+                                "From" => "someuser@example.com",
+                                "User-Agent" => "Toy Client"
+                               }),
+    Expected = "HTTP/1.0 200 OK\r\nFrom: someuser@example.com\r\nUser-Agent: Toy Client\r\n\r\n",
+    ?assertEqual(Expected, HeaderText),
+    ok.
+
+    
+tc_rfc_2616_date(_Config) ->
+    Expected = "Fri, 31 Dec 1999 23:59:58 GMT",
+    RfcDate = http:date_rfc_2616({{1999, 12, 31}, {23, 59, 58}}),
+    ?assertEqual(Expected, RfcDate),
     ok.
 
 %% Helper functions

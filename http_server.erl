@@ -53,10 +53,9 @@ handle_connection(Socket) ->
        {tcp, Socket, StringMsg} ->
             io:format("Server~p: Received message: ~p~n", [Pid, StringMsg]),
             io:format("Server~p: working on request...~n", [Pid]),
-            %% Fake doing some work that takes time.
-            timer:sleep(timer:seconds(3)),
-            Reply = "Echo " ++ StringMsg,
-            io:format("Server~p: Replying: ~p~n~n", [Pid, Reply]),
+            Reply = http:handle_request(StringMsg),
+            io:format("Server~p: Replying...~n~n", [Pid]),
+            %% io:format("Server~p: Replying: ~p~n~n", [Pid, Reply]),
             ok = gen_tcp:send(Socket, Reply);
         {tcp_closed, Socket} ->
             io:format("Server~p: Client closed socket, aborting...~n~n", [Pid])
