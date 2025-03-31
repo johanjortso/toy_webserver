@@ -29,7 +29,7 @@ connect_loop(ListenSocket) ->
             {ok, {LocalIp, LocalPort}} = inet:sockname(Socket),
             {ok, {PeerIp, PeerPort}} = inet:peername(Socket),
             io:format("Server: Accepted connection from IP ~p port ~p on IP ~p port ~p~n",
-                        [PeerIp, PeerPort, LocalIp, LocalPort]),
+                      [PeerIp, PeerPort, LocalIp, LocalPort]),
             handle_connection(Socket);
         %% No client connected for a while, time out so we can check for stop message in next loop iteration.
         {error, timeout} ->
