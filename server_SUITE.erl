@@ -40,9 +40,9 @@ tc_server_parallell_client_requests(Config) ->
     Port = proplists:get_value(port, Config),
     spawn_link(parallel_server, start, [Port]),
     TcPid = self(),
-    NoOfRequests = 10,
+    NoOfRequests = 50,
     [ spawn_link(fun() ->
-                    timer:sleep(timer:seconds(N)),
+                    timer:sleep(N * 10),
                     Reply = client:start(Host, Port),
                     TcPid ! Reply
             end)
