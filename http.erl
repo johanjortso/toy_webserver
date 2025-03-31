@@ -5,29 +5,22 @@
          make_header_text/2,
          date_rfc_2616/1]).
 
-handle_request(_Request) ->
+handle_request(Request) ->
     %% TODO: parse request
+    {Resource0, RequestHeaders} = parse_request(Request),
+    io:format("http: Resource0: ~p~n", [Resource0]),
+    io:format("http: RequestHeaders: ~p~n", [RequestHeaders]),
+    {_Method = "GET", Resource, "HTTP/1.1"} = Resource0,
+    io:format("http: Resource: ~p~n", [Resource]),
     %% TODO: 404/500 if not found
-    %% TODO: MIME type after file ending
-    Resource = "/",
     io:format("http: Resource: ~p~n", [Resource]),
     {ok, Content} = get_content(Resource),
     Mime = mime:get(Resource),
     io:format("http: Mime: ~p~n", [Mime]),
     ResponseHeaders = #{"Date" => date_rfc_2616(),
-                        "Content-Type" => "text/html; charset=utf-8"
+                        "Content-Type" => Mime
                        },
     Header = make_header_text(200, ResponseHeaders),
-    %% io:format("http: Header0: ~p~n", [Header]),
-    %% Header0 =
-    %%     """
-    %%     HTTP/1.0 200 OK
-    %%     Date: Fri, 31 Dec 1999 23:59:59 GMT
-    %%     Content-Type: text/html
-    %% 
-    %% 
-    %%     """,
-    %% io:format("http: Header: ~p~n", [Header0]),
     lists:concat([Header, binary_to_list(Content)]).
 
 parse_request(Request) ->
@@ -55,7 +48,7 @@ make_header_text(ResponseCode, Headers) ->
     lists:flatten([ResponseCodeText | HeaderText]) ++ "\r\n".
 
 make_response_code(200) -> "HTTP/1.0 200 OK\r\n";
-make_response_code(404) -> "HTTP/1.0 400 NOT FOUND\r\n";
+make_response_code(404) -> "HTTP/1.0 404 Not Found\r\n";
 make_response_code(500) -> "HTTP/1.0 500 INTERNAL SERVER ERROR\r\n".
 
 date_rfc_2616() ->
@@ -98,8 +91,16 @@ date_iso_8601() ->
 get_content("/") ->
     {ok, Data} = file:read_file("content/index.html");
 
+%% get_content("/favicon.ico") ->
+    %% TODO: favicon.ico
+
 get_content([$/ | FileName]) ->
-    {ok, Data} = file:read_file("content/" ++ FileName);
+    case file:read_file("content/" ++ FileName) of
+        {ok, Data} ->
+            {ok, Data};
+        {error, enoent} ->
+            {ok, <<"FILE NOT FOUND">>}
+    end;
 
 get_content(_) ->
     {error, 404}.

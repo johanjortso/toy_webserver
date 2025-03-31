@@ -91,6 +91,8 @@ tc_rfc_2616_date(_Config) ->
     ?assertEqual(Expected, RfcDate),
     ok.
 
+mime test
+
 %% Helper functions
 receive_replies(_N = 0) ->
         ok;
