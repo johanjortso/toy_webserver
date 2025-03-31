@@ -10,19 +10,21 @@ start(Host, Port) ->
     {ok, Socket} = gen_tcp:connect(Ip, Port, [list, {packet, 0}]),
     {ok, {LocalIp, LocalPort}} = inet:sockname(Socket),
     {ok, {PeerIp, PeerPort}} = inet:peername(Socket),
-    ok = io:format("Client: Connected to IP ~p port ~p from IP ~p port ~p ~n",
-                   [PeerIp, PeerPort, LocalIp, LocalPort]),
+    Pid = self(),
+    ok = io:format("Client~p: Connected to IP ~p port ~p from IP ~p port ~p ~n",
+                   [Pid, PeerIp, PeerPort, LocalIp, LocalPort]),
     ok = gen_tcp:send(Socket, "Hello"),
     ReplyFromServer =
         receive
             Reply ->
-                ok = io:format("Client: Reply: ~p~n", [Reply]),
+                ok = io:format("Client~p: Reply: ~p~n", [Pid, Reply]),
                 Reply
-        after timer:seconds(30) ->
-            ok = io:format("Client: No data received.~n"),
-            {}
+        after
+            timer:seconds(30) ->
+                ok = io:format("Client~p: No data received.~n", [Pid]),
+                {}
         end,
-    ok = io:format("Client: Closing connection.~n"),
+    ok = io:format("Client~p: Closing connection.~n", [Pid]),
     ok = gen_tcp:close(Socket),
     ReplyFromServer.
 
