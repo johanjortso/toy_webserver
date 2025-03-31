@@ -2,14 +2,20 @@
 -compile([export_all, nowarn_export_all]).
 
 start(Port) ->
-    register(toy_webserver, self()),
+    Pid = self(),
+    register(toy_webserver, Pid),
     {ok, ListenSocket} =
         gen_tcp:listen(Port,
                        [list,
                         {packet, 0},
                         {active, true},
                         {reuseaddr, true}]),
-    connect_loop(ListenSocket).
+    connect_loop(ListenSocket),
+    receive
+        stop ->
+            ok = gen_tcp:close(ListenSocket),
+            io:format("Server~p: stopped...~n~n", [Pid])
+    end.
 
 connect_loop(ListenSocket) ->
     Pid = self(),
@@ -31,12 +37,15 @@ connect_loop(ListenSocket) ->
             {ok, {PeerIp, PeerPort}} = inet:peername(Socket),
             io:format("Server~p: Accepted connection from IP ~p port ~p on IP ~p port ~p~n",
                       [Pid, PeerIp, PeerPort, LocalIp, LocalPort]),
-            spawn(?MODULE, handle_connection, [Socket]);
+            spawn_link(?MODULE, connect_loop, [ListenSocket]),
+            handle_connection(Socket);
         %% No client connected for a while, time out so we can check for stop message in next loop iteration.
         {error, timeout} ->
-            io:format("Server~p: no client request to handle...~n~n", [Pid])
-    end,
-    connect_loop(ListenSocket).
+            io:format("Server~p: no client request to handle...~n~n", [Pid]),
+            spawn_link(?MODULE, connect_loop, [ListenSocket]);
+        {error, closed} ->
+            io:format("Server~p: Listening socket closed, shutting down...~n~n", [Pid])
+    end.
 
 handle_connection(Socket) ->
     Pid = self(),
