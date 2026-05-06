@@ -1,7 +1,7 @@
 -module(client).
 -compile([export_all, nowarn_export_all]).
 
-start(Host, Port) ->
+start(Host, Port, Data) ->
     %% Get IP address in Erlang tuple format.
     %% That is -type ip4_address() :: {0..255, 0..255, 0..255, 0..255} or
     %% -type ip6_address() :: {0..65535, 0..65535, 0..65535, 0..65535,
@@ -13,7 +13,7 @@ start(Host, Port) ->
     Pid = self(),
     ok = io:format("Client~p: Connected to IP ~p port ~p from IP ~p port ~p ~n",
                    [Pid, PeerIp, PeerPort, LocalIp, LocalPort]),
-    ok = gen_tcp:send(Socket, "Hello"),
+    ok = gen_tcp:send(Socket, Data),
     ReplyFromServer =
         receive
             Reply ->
@@ -27,6 +27,9 @@ start(Host, Port) ->
     ok = io:format("Client~p: Closing connection.~n", [Pid]),
     ok = gen_tcp:close(Socket),
     ReplyFromServer.
+
+start(Host, Port) ->
+    start(Host, Port, "Hello").
 
 -spec parse_ip(list() | inet:ip_address()) -> inet:ip_address().
 parse_ip(Ip = "localhost") ->
