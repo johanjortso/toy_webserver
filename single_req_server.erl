@@ -1,29 +1,31 @@
 -module(single_req_server).
+
 -compile([export_all, nowarn_export_all]).
 
 start(Port) ->
     {ok, ListenSocket} =
-        gen_tcp:listen(Port, [list, {packet, 0},
-                                    {active, true},
-                                    {reuseaddr, true}]),
+        gen_tcp:listen(Port, [list, {packet, 0}, {active, true}, {reuseaddr, true}]),
     {ok, {ListenIp, ListenPort}} = inet:sockname(ListenSocket),
-    ok = io:format("Server: Listening on IP ~p port ~p~n", [ListenIp, ListenPort]),
+    Pid = self(),
+    ok = io:format("Server~p: Listening on IP ~p port ~p~n", [Pid, ListenIp, ListenPort]),
     {ok, Socket} = gen_tcp:accept(ListenSocket),
     {ok, {LocalIp, LocalPort}} = inet:sockname(Socket),
     {ok, {PeerIp, PeerPort}} = inet:peername(Socket),
-    ok = io:format("Server: Accepted connection from IP ~p port ~p on IP ~p port ~p~n",
-                   [PeerIp, PeerPort, LocalIp, LocalPort]),
+    io:format("Server~p: Accepted connection:~n  send IP ~p port ~p~n"
+              "  recv IP ~p port ~p - Spawning handler...~n",
+              [Pid, PeerIp, PeerPort, LocalIp, LocalPort]),
     ok = gen_tcp:close(ListenSocket),
     loop(Socket).
 
 loop(Socket) ->
+    Pid = self(),
     receive
         {tcp, Socket, StringMsg} ->
-            io:format("Server: Received message: ~p~n", [StringMsg]),
+            io:format("Server~p: Received message: ~p~n", [Pid, StringMsg]),
             Reply = "Echo " ++ StringMsg,
-            io:format("Server: Replying: ~p~n", [Reply]),
-            ok = gen_tcp:send(Socket, Reply),
-            ok = gen_tcp:close(Socket);
+            io:format("Server~p: Replying: ~p~n", [Pid, Reply]),
+            ok = gen_tcp:send(Socket, Reply);
         {tcp_closed, Socket} ->
-            io:format("Server: Socket closed - shutting down...~n")
-    end.
+            io:format("Server~p: Socket closed - shutting down...~n", [Pid])
+    end,
+    ok = gen_tcp:close(Socket).
