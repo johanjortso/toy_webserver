@@ -7,7 +7,13 @@ start(Host, Port, Data) ->
     %% -type ip6_address() :: {0..65535, 0..65535, 0..65535, 0..65535,
     %%                         0..65535, 0..65535, 0..65535, 0..65535}.
     {ok, Ip} = parse_ip(Host),
-    {ok, Socket} = gen_tcp:connect(Ip, Port, [list, {packet, 0}]),
+
+    Connection = gen_tcp:connect(Ip, Port, [list, {packet, 0}]),
+    handle_connection(Connection, Data).
+
+handle_connection({error, Error}, _Data) ->
+    {error, Error};
+handle_connection({ok, Socket}, Data) ->
     {ok, {LocalIp, LocalPort}} = inet:sockname(Socket),
     {ok, {PeerIp, PeerPort}} = inet:peername(Socket),
     Pid = self(),

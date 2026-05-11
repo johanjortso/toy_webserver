@@ -11,3 +11,15 @@ An extremely simple web server for educational purposes. It exists in four diffe
 ```console
 $ ct_run -dir . -logdir ct
 ```
+
+Or from an Erlang shell
+```console
+$ ct:run_test([{suite, "./server_SUITE"}, {logdir, "./ct"}]).
+$ ct:run_test([{suite, "./server_SUITE"}, {logdir, "./ct"}, {group, server_tests}, {case, [tc_server_parallell_client_requests]} ]).
+```
+
+## Debugging TCP connections
+
+```console
+netstat -ano | Select-String "8080"
+```
