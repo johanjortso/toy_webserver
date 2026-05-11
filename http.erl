@@ -4,30 +4,33 @@
          parse_request/1,
          make_header_text/2]).
 
+-include("http_server_config.hrl").
+
 handle_request(Request) ->
+    ct:pal("Request: ~p~n", [Request]),
     %% We only support HTTP get right now
     {{_Method = "GET", Resource, "HTTP/1.1"}, RequestHeaders} = parse_request(Request),
-    io:format("http: Resource: ~p~n", [Resource]),
-    io:format("http: RequestHeaders: ~p~n", [RequestHeaders]),
+    ct:pal("http: Resource: ~p~n", [Resource]),
+    ct:pal("http: RequestHeaders: ~p~n", [RequestHeaders]),
     %% TODO: 404/500 if not found
     {Header, ResponseContent} =
-    case get_content(Resource) of
-        {ok, Content} ->
-            Mime = mime:get(Resource),
-            io:format("http: Mime: ~p~n", [Mime]),
-            ResponseHeaders = #{"Date" => date:rfc_2616(),
-                                "Content-Type" => Mime},
-            {make_header_text(200, ResponseHeaders), Content};
-        {error, enoent} ->
-            ResponseHeaders = #{"Date" => date:rfc_2616(),
-                                "Content-Type" => "text/html"},
-            Content = <<"404 Not Found">>,
-            {make_header_text(404, ResponseHeaders), Content};
-        _Else ->
-            ResponseHeaders = #{"Date" => date:rfc_2616(),
-                                "Content-Type" => "text/html"},
-            Content = <<"500 Internal Server Error">>,
-            {make_header_text(500, ResponseHeaders), Content}
+        case get_content(Resource) of
+            {ok, Content} ->
+                Mime = mime:get(Resource),
+                io:format("http: Mime: ~p~n", [Mime]),
+                ResponseHeaders = #{"Date" => date:rfc_2616(),
+                                    "Content-Type" => Mime},
+                {make_header_text(200, ResponseHeaders), Content};
+            {error, enoent} ->
+                ResponseHeaders = #{"Date" => date:rfc_2616(),
+                                    "Content-Type" => "text/html"},
+                Content = <<"404 Not Found">>,
+                {make_header_text(404, ResponseHeaders), Content};
+            _Else ->
+                ResponseHeaders = #{"Date" => date:rfc_2616(),
+                                    "Content-Type" => "text/html"},
+                Content = <<"500 Internal Server Error">>,
+                {make_header_text(500, ResponseHeaders), Content}
     end,
     lists:concat([Header, binary_to_list(ResponseContent)]).
 
@@ -68,7 +71,8 @@ get_content("/visitors2") ->
    {error, "?"};
 get_content([$/ | FileName]) ->
     % visitor_counter:increment(),
-    file:read_file("content/" ++ FileName);
+    Resource = ?HTTP_SERVER_ROOT ++ "/content/" ++ FileName,
+    file:read_file(Resource);
 get_content(_) ->
     {error, enoent}.
 

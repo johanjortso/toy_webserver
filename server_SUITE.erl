@@ -8,14 +8,14 @@ all() -> [ {group, GroupName} || {GroupName, _Opt, List} <- groups(), length(Lis
 groups() ->
     ServerTests = [tc_server_onetime_request,
                    tc_server_multiple_client_requests,
-                   tc_server_parallell_client_requests,
-                   tc_http_server_get],
-    Http = [tc_http_split_headers,
-            tc_http_make_header_text,
-            tc_rfc_2616_date,
-            tc_http_server_get],
+                   tc_server_parallell_client_requests],
+    HttpUtil = [tc_http_split_headers,
+                tc_http_make_header_text,
+                tc_rfc_2616_date],
+    HttpServer = [tc_http_server_get],
     [{server_tests, [], ServerTests},
-     {http, [parallel], Http}].
+     {http_util, [parallel], HttpUtil},
+     {http_server, [], HttpServer}].
 
 init_per_suite(Config) ->
     %% For using Erlang's httpc module in test
