@@ -45,7 +45,11 @@ parse_resource(Resource) ->
 
 parse_headers(HeaderText) ->
     HeaderPropList =
-        lists:map(fun(H) ->
+        lists:map(fun("te:") ->
+                    %% Workaround for bug in Erlang OTP 24 httpc:reqest/1
+                    %% See: https://github.com/erlang/otp/issues/10065
+                    {"te", "bogus"};
+                     (H) ->
                           [Key, Val] = string:split(H, ": "),
                           {Key, Val}
                   end,

@@ -11,7 +11,8 @@ groups() ->
                    tc_server_parallell_client_requests],
     HttpUtil = [tc_http_split_headers,
                 tc_http_make_header_text,
-                tc_rfc_2616_date],
+                tc_rfc_2616_date,
+                tc_httpc_bug_header],
     HttpServer = [tc_http_server_get],
     [{server_tests, [], ServerTests},
      {http_util, [parallel], HttpUtil},
@@ -92,6 +93,25 @@ tc_http_split_headers(_Config) ->
                  Headers),
     ok.
 
+tc_httpc_bug_header(_Config) ->
+    %% Workaround for bug in Erlang OTP 24 httpc:reqest/1 sending
+    %% empty transfer encoding header.
+    %% See: https://github.com/erlang/otp/issues/10065
+    Request = "GET /test.html HTTP/1.1\r\ncontent-length: 0\r\nte: \r\n"
+              "host: localhost:7777\r\nconnection: keep-alive\r\n\r\n",
+    {Resource, Headers} = http:parse_request(Request),
+    ct:pal("Resource ~p~n", [Resource]),
+    ct:pal("Headers ~p~n", [Headers]),
+    ?assertEqual({"GET", "/test.html", "HTTP/1.1"}, Resource),
+    ?assertEqual(#{
+                   "content-length" => "0",
+                   "host" => "localhost:7777",
+                   "connection" => "keep-alive",
+                   "te" => "bogus"
+                  },
+                 Headers),
+    ok.
+
 tc_http_make_header_text(_Config) ->
     HeaderText =
         http:make_header_text(200,
@@ -102,7 +122,6 @@ tc_http_make_header_text(_Config) ->
     Expected = "HTTP/1.1 200 OK\r\nFrom: someuser@example.com\r\nUser-Agent: Toy Client\r\n\r\n",
     ?assertEqual(Expected, HeaderText),
     ok.
-
 
 tc_rfc_2616_date(_Config) ->
     Expected = "Fri, 31 Dec 1999 23:59:58 GMT",
