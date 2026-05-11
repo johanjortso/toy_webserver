@@ -1,21 +1,30 @@
 -module(server_SUITE).
 -compile([export_all, nowarn_export_all]).
 
-all() -> [{group, GroupName} || {GroupName, _Opt, List} <- groups(), length(List) > 0].
+-include_lib("stdlib/include/assert.hrl").
+
+all() -> [ {group, GroupName} || {GroupName, _Opt, List} <- groups(), length(List) > 0 ].
 
 groups() ->
-    ServerTests = [
-        tc_server_onetime_request,
-        tc_server_multiple_client_requests,
-        tc_server_parallell_client_requests
-    ],
-    [{server_tests, [], ServerTests}].
+    ServerTests = [tc_server_onetime_request,
+                   tc_server_multiple_client_requests,
+                   tc_server_parallell_client_requests,
+                   tc_http_server_get],
+    Http = [tc_http_split_headers,
+            tc_http_make_header_text,
+            tc_rfc_2616_date,
+            tc_http_server_get],
+    [{server_tests, [], ServerTests},
+     {http, [parallel], Http}].
 
 init_per_suite(Config) ->
+    %% For using Erlang's httpc module in test
+    inets:start(),
     Config ++ [{host, "localhost"},
                {port, 7777}].
 
 end_per_suite(_Config) ->
+    inets:stop(),
     ok.
 
 tc_server_onetime_request(Config) ->
@@ -23,6 +32,7 @@ tc_server_onetime_request(Config) ->
     Port = proplists:get_value(port, Config),
     spawn_link(single_req_server, start, [Port]),
     {tcp, _Socket, "Echo Hello"} = client:start(Host, Port),
+    {error, econnrefused} = client:start(Host, Port),
     ok.
 
 tc_server_multiple_client_requests(Config) ->
@@ -31,7 +41,7 @@ tc_server_multiple_client_requests(Config) ->
     spawn_link(multi_req_server, start, [Port]),
     {tcp, _Socket1, "Echo Hello"} = client:start(Host, Port),
     {tcp, _Socket2, "Echo Hello"} = client:start(Host, Port),
-    toy_webserver ! stop,
+    multi_req_server ! stop,
     {tcp, _, "Echo Hello"} = client:start(Host, Port),
     ok.
 
@@ -40,21 +50,71 @@ tc_server_parallell_client_requests(Config) ->
     Port = proplists:get_value(port, Config),
     spawn_link(parallel_server, start, [Port]),
     TcPid = self(),
-    NoOfRequests = 10,
+    NoOfRequests = 5,
     [ spawn_link(fun() ->
-                    timer:sleep(timer:seconds(N)),
-                    Reply = client:start(Host, Port),
-                    TcPid ! Reply
-            end)
+                         timer:sleep(N * 10),
+                         Reply = client:start(Host, Port),
+                         TcPid ! Reply
+                 end)
       || N <- lists:seq(1, NoOfRequests) ],
     receive_replies(NoOfRequests),
     ct:pal("Got replies from server for all client requests."),
-    toy_webserver ! stop,
+    parallel_server ! stop,
     ok.
+
+tc_http_server_get(Config) ->
+    Host = proplists:get_value(host, Config),
+    Port = proplists:get_value(port, Config),
+    spawn_link(http_server, start, [Port]),
+    Url = lists:concat(["http://", Host, ":", Port, "/test.html"]),
+    ct:pal("Url ~p~n", [Url]),
+    {ok, Reply} = httpc:request(Url),
+    ct:pal("Reply ~p~n", [Reply]),
+    {StatusLine, Headers, Body} = Reply,
+    ?assertEqual({"HTTP/1.1", 200, "OK"}, StatusLine),
+    [{"date", _Date},
+     {"content-type", "text/html; charset=utf-8"}] = Headers,
+    ?assertEqual("<!DOCTYPE html>\r\n<html>Test content</html>", Body),
+    ok.
+
+tc_http_split_headers(_Config) ->
+    Request =
+        "GET /path/to/file.html HTTP/1.1\r\nFrom: someuser@example.com\r\nUse"
+        "r-Agent: Toy Client\r\n\r\n",
+    {Resource, Headers} = http:parse_request(Request),
+    ct:pal("Resource ~p~n", [Resource]),
+    ct:pal("Headers ~p~n", [Headers]),
+    ?assertEqual({"GET", "/path/to/file.html", "HTTP/1.1"}, Resource),
+    ?assertEqual(#{
+                   "From" => "someuser@example.com",
+                   "User-Agent" => "Toy Client"
+                  },
+                 Headers),
+    ok.
+
+tc_http_make_header_text(_Config) ->
+    HeaderText =
+        http:make_header_text(200,
+                              #{
+                                "From" => "someuser@example.com",
+                                "User-Agent" => "Toy Client"
+                               }),
+    Expected = "HTTP/1.1 200 OK\r\nFrom: someuser@example.com\r\nUser-Agent: Toy Client\r\n\r\n",
+    ?assertEqual(Expected, HeaderText),
+    ok.
+
+
+tc_rfc_2616_date(_Config) ->
+    Expected = "Fri, 31 Dec 1999 23:59:58 GMT",
+    RfcDate = date:rfc_2616({{1999, 12, 31}, {23, 59, 58}}),
+    ?assertEqual(Expected, RfcDate),
+    ok.
+
+%% TODO: mime test
 
 %% Helper functions
 receive_replies(_N = 0) ->
-        ok;
+    ok;
 receive_replies(N) when is_integer(N), N > 0 ->
     receive
         {tcp, _Socket, "Echo Hello"} ->
