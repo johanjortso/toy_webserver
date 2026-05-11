@@ -76,6 +76,7 @@ tc_http_server_get(Config) ->
     [{"date", _Date},
      {"content-type", "text/html; charset=utf-8"}] = Headers,
     ?assertEqual("<!DOCTYPE html>\r\n<html>Test content</html>", Body),
+    http_server ! stop,
     ok.
 
 tc_http_split_headers(_Config) ->
