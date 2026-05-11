@@ -44,7 +44,7 @@ connect_loop(Socket, HandlerCount) ->
         {error, timeout} ->
             io:format("ListeningServer~p: No client request to handle...~n~n", [Pid])
     end,
-    connect_loop(Socket, HandlerCount + 1).
+    ?MODULE:connect_loop(Socket, HandlerCount + 1).
 
 handle_request(Socket, ServerName) ->
     Pid = self(),
