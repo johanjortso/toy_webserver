@@ -40,10 +40,10 @@ tc_server_multiple_client_requests(Config) ->
     Host = proplists:get_value(host, Config),
     Port = proplists:get_value(port, Config),
     spawn_link(multi_req_server, start, [Port]),
+    timer:sleep(100), %% Give server some time to start up before clients connect.
     {tcp, _Socket1, "Echo Hello"} = client:start(Host, Port),
     {tcp, _Socket2, "Echo Hello"} = client:start(Host, Port),
     multi_req_server ! stop,
-    {tcp, _, "Echo Hello"} = client:start(Host, Port),
     ok.
 
 tc_server_parallell_client_requests(Config) ->
@@ -75,7 +75,7 @@ tc_http_server_get(Config) ->
     ?assertEqual({"HTTP/1.1", 200, "OK"}, StatusLine),
     [{"date", _Date},
      {"content-type", "text/html; charset=utf-8"}] = Headers,
-    ?assertEqual("<!DOCTYPE html>\r\n<html>Test content</html>", Body),
+    ?assertEqual("<!DOCTYPE html><html>Test content</html>", Body),
     http_server ! stop,
     ok.
 

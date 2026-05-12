@@ -52,6 +52,7 @@ handle_request(Socket, ServerName) ->
        {tcp, Socket, StringMsg} ->
             io:format("~p ~p: Received message: ~p~n", [Pid, ServerName, StringMsg]),
             io:format("~p ~p: Working on request...~n", [Pid, ServerName]),
+
             Reply = http:handle_request(StringMsg),
             io:format("~p ~p: Replying~n~n", [Pid, ServerName]),
             ok = gen_tcp:send(Socket, Reply);
